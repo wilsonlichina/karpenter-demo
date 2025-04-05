@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: email-extractor-s3-pv
+spec:
+  capacity:
+    storage: 1200Gi # Ignored, required
+  accessModes:
+    - ReadWriteMany # Supported options: ReadWriteMany / ReadOnlyMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: "" # Required for static provisioning
+  claimRef: # To ensure no other PVCs can claim this PV
+    namespace: email-extractor # Using our namespace
+    name: email-extractor-s3-pvc # Name of our PVC
+  mountOptions:
+    - allow-delete
+    - region us-east-1 # Using the same region as our EKS cluster
+  csi:
+    driver: s3.csi.aws.com # Required CSI driver for S3
+    volumeHandle: email-extractor-s3-volume # Must be unique
+    volumeAttributes:
+      bucketName: business-card-email-extractor # Our S3 bucket name

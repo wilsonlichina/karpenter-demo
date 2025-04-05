@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: email-extractor
+  namespace: email-extractor
+  labels:
+    app: email-extractor
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: email-extractor
+  template:
+    metadata:
+      labels:
+        app: email-extractor
+    spec:
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            preference:
+              matchExpressions:
+              - key: kubernetes.io/arch
+                operator: In
+                values:
+                - amd64
+                - arm64
+      serviceAccountName: email-extractor-sa
+      containers:
+      - name: email-extractor
+        image: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/email-extractor:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5000
+        env:
+        - name: S3_BUCKET_NAME
+          value: "business-card-email-extractor"
+        - name: S3_MOUNT_PATH
+          value: "/mnt/s3"
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "512Mi"
+          limits:
+            cpu: "1"
+            memory: "1Gi"
+        volumeMounts:
+        - name: s3-volume
+          mountPath: /mnt/s3
+          readOnly: true
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: s3-volume
+        persistentVolumeClaim:
+          claimName: email-extractor-s3-pvc

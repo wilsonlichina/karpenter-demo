@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  namespace: email-extractor
+  name: ingress-email-extractor
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/group.name: game-2048-group
+spec:
+  ingressClassName: alb
+  rules:
+    - http:
+        paths:
+        - path: /email-extractor
+          pathType: Prefix
+          backend:
+            service:
+              name: email-extractor
+              port:
+                number: 80
